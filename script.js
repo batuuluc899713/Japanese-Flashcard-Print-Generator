@@ -3,6 +3,8 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
     const MINI_CHAPTER_SIZE = 5;
     const RECENT_WRONG_BONUS = 5;
     const RECENT_WRONG_WINDOW_MS = 10 * 60 * 1000;
+    const SAVE_APP_NAME = "Yellow Flashcards";
+    const SAVE_VERSION = 1;
     const DEFAULT_AUDIO_SETTINGS = {
       enabled: true,
       volume: 70
@@ -29,6 +31,7 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
     let comboTimerId = null;
     let comboTimerStartedAt = 0;
     let comboTimerDuration = 0;
+    let pendingImportedSaveData = null;
 
     const el = {
       homeScreen: document.getElementById("homeScreen"),
@@ -51,6 +54,10 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
       enableSoundsCheckbox: document.getElementById("enableSoundsCheckbox"),
       volumeSlider: document.getElementById("volumeSlider"),
       volumeValue: document.getElementById("volumeValue"),
+      exportSaveBtn: document.getElementById("exportSaveBtn"),
+      importSaveBtn: document.getElementById("importSaveBtn"),
+      importSaveInput: document.getElementById("importSaveInput"),
+      saveDataMessage: document.getElementById("saveDataMessage"),
       cardMessage: document.getElementById("cardMessage"),
       fileInput: document.getElementById("fileInput"),
       importMessage: document.getElementById("importMessage"),
@@ -86,7 +93,10 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
       resetStarsCheckbox: document.getElementById("resetStarsCheckbox"),
       clearFunStatsCheckbox: document.getElementById("clearFunStatsCheckbox"),
       cancelClearStatsBtn: document.getElementById("cancelClearStatsBtn"),
-      confirmClearStatsBtn: document.getElementById("confirmClearStatsBtn")
+      confirmClearStatsBtn: document.getElementById("confirmClearStatsBtn"),
+      importSaveModal: document.getElementById("importSaveModal"),
+      cancelImportSaveBtn: document.getElementById("cancelImportSaveBtn"),
+      confirmImportSaveBtn: document.getElementById("confirmImportSaveBtn")
     };
 
     const audioManager = createAudioManager();
@@ -110,6 +120,9 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
     el.resetSampleDataBtn.addEventListener("click", resetSampleData);
     el.enableSoundsCheckbox.addEventListener("change", updateSoundSettings);
     el.volumeSlider.addEventListener("input", updateSoundSettings);
+    el.exportSaveBtn.addEventListener("click", exportSaveData);
+    el.importSaveBtn.addEventListener("click", () => el.importSaveInput.click());
+    el.importSaveInput.addEventListener("change", readImportSaveFile);
     el.fileInput.addEventListener("change", importTxtFile);
     el.backToDecksBtn.addEventListener("click", showHome);
     el.statsBtn.addEventListener("click", showStats);
@@ -118,6 +131,8 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
     el.clearStatsBtn.addEventListener("click", openClearStatsModal);
     el.cancelClearStatsBtn.addEventListener("click", closeClearStatsModal);
     el.confirmClearStatsBtn.addEventListener("click", clearStatistics);
+    el.cancelImportSaveBtn.addEventListener("click", closeImportSaveModal);
+    el.confirmImportSaveBtn.addEventListener("click", confirmImportSaveData);
 
     function loadData() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -309,6 +324,101 @@ const STORAGE_KEY = "flashcardLearningPrototype.v1";
       renderSoundSettings();
       saveData();
       audioManager.preload();
+    }
+
+    function exportSaveData() {
+      saveData();
+      const payload = {
+        app: SAVE_APP_NAME,
+        saveVersion: SAVE_VERSION,
+        exportedAt: new Date().toISOString(),
+        data
+      };
+      const date = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `yellow-flashcards-save-${date}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setMessage(el.saveDataMessage, "Save data exported.", "good");
+    }
+
+    function readImportSaveFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || ""));
+          const importedData = validateImportedSave(parsed);
+          if (!importedData) {
+            pendingImportedSaveData = null;
+            setMessage(el.saveDataMessage, "Invalid save file.", "bad");
+            return;
+          }
+          pendingImportedSaveData = importedData;
+          openImportSaveModal();
+        } catch (error) {
+          pendingImportedSaveData = null;
+          setMessage(el.saveDataMessage, "Invalid save file.", "bad");
+        } finally {
+          el.importSaveInput.value = "";
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    function validateImportedSave(payload) {
+      if (!payload || payload.app !== SAVE_APP_NAME || payload.saveVersion !== SAVE_VERSION || !payload.data) {
+        return null;
+      }
+      if (!Array.isArray(payload.data.decks)) return null;
+      const hasInvalidDeck = payload.data.decks.some((deck) => {
+        return !deck || typeof deck.name !== "string" || !Array.isArray(deck.cards);
+      });
+      if (hasInvalidDeck) return null;
+
+      const hasInvalidCard = payload.data.decks.some((deck) => {
+        return deck.cards.some((card) => !card || typeof card.question !== "string" || typeof card.answer !== "string");
+      });
+      if (hasInvalidCard) return null;
+      return payload.data;
+    }
+
+    function openImportSaveModal() {
+      el.importSaveModal.hidden = false;
+      el.cancelImportSaveBtn.focus();
+    }
+
+    function closeImportSaveModal() {
+      pendingImportedSaveData = null;
+      el.importSaveModal.hidden = true;
+    }
+
+    function confirmImportSaveData() {
+      if (!pendingImportedSaveData) {
+        closeImportSaveModal();
+        setMessage(el.saveDataMessage, "Invalid save file.", "bad");
+        return;
+      }
+
+      data = migrateData(pendingImportedSaveData);
+      selectedDeckIds = normalizeSelectedDeckIds(data.selectedDeckIds || data.selectedDeckId);
+      if (!selectedDeckIds.length && data.decks[0]) selectedDeckIds = [data.decks[0].id];
+      session = null;
+      editingCardId = null;
+      pendingImportedSaveData = null;
+      saveData();
+      renderSoundSettings();
+      showScreen("home");
+      renderHome();
+      el.importSaveModal.hidden = true;
+      setMessage(el.saveDataMessage, "Save data imported.", "good");
     }
 
     function makeId(prefix) {

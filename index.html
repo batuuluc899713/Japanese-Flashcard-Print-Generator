@@ -98,6 +98,16 @@
           </div>
 
           <div class="panel">
+            <h3>Save Data</h3>
+            <div class="row">
+              <button id="exportSaveBtn" class="secondary" type="button">Export Save Data</button>
+              <button id="importSaveBtn" class="secondary" type="button">Import Save Data</button>
+              <input id="importSaveInput" type="file" accept=".json,application/json" hidden>
+            </div>
+            <p id="saveDataMessage" class="message"></p>
+          </div>
+
+          <div class="panel">
             <h3>Cards</h3>
             <div id="cardList" class="cards-table"></div>
           </div>
@@ -195,6 +205,17 @@
         <div class="row" style="justify-content: flex-end;">
           <button id="cancelClearStatsBtn" class="secondary" type="button">Cancel</button>
           <button id="confirmClearStatsBtn" class="danger" type="button">Confirm Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="importSaveModal" class="modal-backdrop" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="importSaveTitle">
+        <h3 id="importSaveTitle">Import save data?</h3>
+        <p class="muted">Importing this save file will replace your current local data. Are you sure?</p>
+        <div class="row" style="justify-content: flex-end;">
+          <button id="cancelImportSaveBtn" class="secondary" type="button">Cancel</button>
+          <button id="confirmImportSaveBtn" class="danger" type="button">Confirm Import</button>
         </div>
       </div>
     </div>
