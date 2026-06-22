@@ -3,224 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Yellow Flashcards</title>
+  <title>Kado - Japanese Flashcard Sheets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="brand">
-        <img src="assets/logo.png" alt="Yellow Flashcards mascot" class="brand-logo">
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">A4 FLASHCARD MAKER</p>
+      <h1>Kado <span>カード</span></h1>
+      <p class="subtitle">Create, print, flip, cut. Twenty-five cards per sheet.</p>
+    </div>
+    <div class="header-mark" aria-hidden="true">あ</div>
+  </header>
+
+  <main class="app-shell">
+    <section class="toolbar" aria-label="Sheet controls">
+      <div class="toolbar-group primary-actions">
+        <button id="printBtn" class="button button-primary" type="button">Print / Save PDF</button>
+        <button id="clearBtn" class="button" type="button">Clear all</button>
+      </div>
+
+      <div class="toolbar-group">
+        <label class="select-label" for="backLayout">Back layout</label>
+        <select id="backLayout">
+          <option value="normal">Normal</option>
+          <option value="mirrored">Mirrored for duplex</option>
+        </select>
+      </div>
+
+      <div class="toolbar-group file-actions">
+        <button id="saveBtn" class="button button-quiet" type="button">Save JSON</button>
+        <button id="loadBtn" class="button button-quiet" type="button">Load JSON</button>
+        <input id="loadInput" type="file" accept=".json,application/json" hidden>
+        <button id="testBtn" class="button button-test" type="button" aria-pressed="false">Print Test Mode</button>
+      </div>
+    </section>
+
+    <section class="workspace" aria-labelledby="editorHeading">
+      <div class="sheet-heading">
         <div>
-          <h1>Yellow Flashcards</h1>
-          <p>Weighted 8-card learning, random review, and local deck statistics.</p>
+          <p class="section-kicker">FRONT EDITOR</p>
+          <h2 id="editorHeading">A4 landscape <span>·</span> 5 × 5 grid</h2>
+        </div>
+        <div class="legend" aria-label="Field legend">
+          <span><i class="dot dot-japanese"></i>Japanese</span>
+          <span><i class="dot dot-romaji"></i>Romaji</span>
+          <span><i class="dot dot-meaning"></i>Turkish back</span>
         </div>
       </div>
-      <div class="row">
-        <button id="statsBtn" class="secondary" type="button">Statistics</button>
-        <button id="backToDecksBtn" class="secondary" type="button" hidden>Back to Decks</button>
+
+      <div class="sheet-stage">
+        <div id="editorGrid" class="editor-sheet" aria-label="25-card editor"></div>
       </div>
-    </header>
 
-    <section id="homeScreen" class="screen active" aria-label="Deck management">
-      <div class="layout">
-        <section class="panel">
-          <h2>Decks</h2>
-          <div class="row">
-            <button id="startLearningBtn" type="button">Start Learning</button>
-            <button id="startRandomBtn" class="secondary" type="button">Start Random</button>
-            <button id="deleteDeckBtn" class="danger" type="button">Delete Selected</button>
-          </div>
-          <div id="deckList" class="deck-list"></div>
-          <p id="deckMessage" class="message"></p>
-        </section>
-
-        <section class="stack">
-          <div class="panel">
-            <h2>Selected Deck</h2>
-            <div id="selectedDeckBox" class="selected-deck"></div>
-            <div class="row" style="margin-top: 12px;">
-              <input id="renameDeckInput" type="text" placeholder="Rename selected deck" autocomplete="off">
-              <button id="renameDeckBtn" class="secondary" type="button">Rename</button>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h3>Create Deck</h3>
-            <div class="row">
-              <input id="deckNameInput" type="text" placeholder="Deck name" autocomplete="off">
-              <button id="createDeckBtn" type="button">Create</button>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h3>Add Card</h3>
-            <div class="two">
-              <input id="questionInput" type="text" placeholder="Question, e.g. た" autocomplete="off">
-              <input id="answerInput" type="text" placeholder="Answer, e.g. ta" autocomplete="off">
-            </div>
-            <div class="row" style="margin-top: 10px;">
-              <button id="addCardBtn" type="button">Add Card</button>
-              <span id="cardMessage" class="message"></span>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h3>Import TXT</h3>
-            <input id="fileInput" type="file" accept=".txt,text/plain">
-            <div class="muted" style="margin-top: 10px; line-height: 1.55;">
-              <strong>Tips:</strong><br>
-              You can import cards using one of these formats:<br>
-              た=ta<br>
-              ち&nbsp;&nbsp;&nbsp;&nbsp;chi<br>
-              つ,tsu<br>
-              て=te
-            </div>
-            <p id="importMessage" class="message"></p>
-          </div>
-
-          <div class="panel">
-            <h3>Sample Data</h3>
-            <p class="muted">If old saved sample cards still look broken, reset the sample deck.</p>
-            <button id="resetSampleDataBtn" class="secondary" type="button">Reset Sample Data</button>
-          </div>
-
-          <div class="panel">
-            <h3>Sound Settings</h3>
-            <label class="check-row">
-              <input id="enableSoundsCheckbox" type="checkbox" checked>
-              <span>Enable Sounds</span>
-            </label>
-            <label class="sound-slider">
-              <span class="muted">Volume <strong id="volumeValue">70%</strong></span>
-              <input id="volumeSlider" type="range" min="0" max="100" value="70">
-            </label>
-          </div>
-
-          <div class="panel">
-            <h3>Save Data</h3>
-            <div class="row">
-              <button id="exportSaveBtn" class="secondary" type="button">Export Save Data</button>
-              <button id="importSaveBtn" class="secondary" type="button">Import Save Data</button>
-              <input id="importSaveInput" type="file" accept=".json,application/json" hidden>
-            </div>
-            <p id="saveDataMessage" class="message"></p>
-          </div>
-
-          <div class="panel">
-            <h3>Cards</h3>
-            <div id="cardList" class="cards-table"></div>
-          </div>
-        </section>
+      <div class="sheet-footer">
+        <p><strong>Tip:</strong> Use your printer's actual-size or 100% scale setting. Disable fit-to-page.</p>
+        <p id="status" class="status" role="status" aria-live="polite">Ready · changes save automatically</p>
       </div>
     </section>
-
-    <section id="studyScreen" class="screen" aria-label="Study session">
-      <div class="study-shell">
-        <section class="question-box">
-          <span id="modeIndicator" class="mode-pill">Learning Mode</span>
-          <div id="comboArea" class="combo-area">
-            <div id="comboBadge" class="combo-badge">Combo x0</div>
-            <div class="combo-timer" aria-label="Combo timer">
-              <span id="comboTimerFill"></span>
-            </div>
-            <div id="fireLayer" class="fire-layer" aria-hidden="true"></div>
-          </div>
-          <div id="questionText" class="question"></div>
-          <form id="answerForm" class="answer-area">
-            <input id="studyAnswerInput" type="text" placeholder="Type the answer" autocomplete="off">
-            <button id="submitAnswerBtn" type="submit">Submit</button>
-          </form>
-          <div id="feedbackText" class="feedback"></div>
-          <button id="restartLearningBtn" class="secondary" type="button" hidden>Restart Learning</button>
-          <div id="currentStars" class="stars" aria-label="Current card star progress"></div>
-        </section>
-
-        <aside class="panel">
-          <h2>Session</h2>
-          <div class="progress-line">
-            <span>Mastered</span>
-            <strong id="completedCount">0</strong>
-          </div>
-          <div class="progress-line">
-            <span>Remaining</span>
-            <strong id="remainingCount">0</strong>
-          </div>
-          <div class="progress-line">
-            <span>Introduced</span>
-            <strong id="introducedCount">0</strong>
-          </div>
-          <div id="batchMasteredRow" class="progress-line">
-            <span id="batchMasteredLabel">Batch mastered</span>
-            <strong id="batchMasteredCount">0/5</strong>
-          </div>
-          <div class="bar" aria-label="Overall deck progress"><span id="overallBar"></span></div>
-
-          <h3 style="margin-top: 20px;">Active Cards</h3>
-          <div id="activeCardList" class="stack"></div>
-        </aside>
-      </div>
-    </section>
-
-    <section id="statsScreen" class="screen" aria-label="Statistics">
-      <section class="panel">
-        <div class="row" style="justify-content: space-between; margin-bottom: 14px;">
-          <h2 style="margin: 0;">Statistics</h2>
-          <button id="clearStatsBtn" class="danger" type="button">Clear Statistics</button>
-        </div>
-        <div id="statsSummary" class="stats-grid"></div>
-        <h3>Fun Stats</h3>
-        <div id="funStatsSummary" class="stats-grid"></div>
-        <div class="layout">
-          <div class="stack">
-            <div>
-              <h3>Lowest Success Rate</h3>
-              <div id="lowestSuccessList" class="stack"></div>
-            </div>
-            <div>
-              <h3>Most Wrong Answers</h3>
-              <div id="mostWrongList" class="stack"></div>
-            </div>
-          </div>
-          <div>
-            <h3>Most Confused</h3>
-            <div id="confusedList" class="stack"></div>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <div id="clearStatsModal" class="modal-backdrop" hidden>
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="clearStatsTitle">
-        <h3 id="clearStatsTitle">Clear statistics?</h3>
-        <p class="muted">This resets attempts, mastery counts, timestamps, and confusion data. Decks and cards stay in place.</p>
-        <label class="check-row">
-          <input id="resetStarsCheckbox" type="checkbox">
-          <span>Also reset card stars</span>
-        </label>
-        <label class="check-row">
-          <input id="clearFunStatsCheckbox" type="checkbox">
-          <span>Also clear Fun Stats</span>
-        </label>
-        <div class="row" style="justify-content: flex-end;">
-          <button id="cancelClearStatsBtn" class="secondary" type="button">Cancel</button>
-          <button id="confirmClearStatsBtn" class="danger" type="button">Confirm Clear</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="importSaveModal" class="modal-backdrop" hidden>
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="importSaveTitle">
-        <h3 id="importSaveTitle">Import save data?</h3>
-        <p class="muted">Importing this save file will replace your current local data. Are you sure?</p>
-        <div class="row" style="justify-content: flex-end;">
-          <button id="cancelImportSaveBtn" class="secondary" type="button">Cancel</button>
-          <button id="confirmImportSaveBtn" class="danger" type="button">Confirm Import</button>
-        </div>
-      </div>
-    </div>
   </main>
+
+  <div id="printArea" class="print-area" aria-hidden="true">
+    <section class="print-sheet front-sheet" aria-label="Flashcard fronts">
+      <div id="frontPrintGrid" class="print-grid"></div>
+    </section>
+    <section class="print-sheet back-sheet" aria-label="Flashcard backs">
+      <div id="backPrintGrid" class="print-grid"></div>
+    </section>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
-
